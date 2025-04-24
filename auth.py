@@ -5,7 +5,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/documents.readonly'
+]
 
 
 def get_credentials():
@@ -24,3 +27,6 @@ def get_credentials():
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
     return creds
+
+
+get_credentials()
