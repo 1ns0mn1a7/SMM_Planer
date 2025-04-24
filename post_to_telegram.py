@@ -3,40 +3,46 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
 
-vk_api_key = os.getenv("VK_API_KEY")
+def post_vk(message):
+    load_dotenv()
+    vk_api_key_group = os.getenv("VK_API_KEY")
+
+    payload_wall_post = {
+        "owner_id": -230220710,
+        "message": message, 
+        "access_token": vk_api_key_group,
+        "v": 5.199
+    }
+    url = "https://api.vk.com/method/wall.post"    
+    response = requests.get(url, params=payload_wall_post)
+    response.raise_for_status()
+    return response.json()["response"]["post_id"]
 
 
-url_get_upload_server = "https://api.vk.com/method/photos.getUploadServer"
+def delete_post_vk(post_id):
 
-payload = {
-    "album_id": 306982325,
-    "group_id": 230220710 
-}
+    # Для работы необходим токен пользователя
 
-response = requests.get(url_get_upload_server, params=payload)
-response.raise_for_status()
-print(response.json())
+    load_dotenv()
+    vk_api_key_user = os.getenv("Токен пользователя")
 
-
-# payload_wall_post = {
-#     "owner_id": -230220710,
-#     "message": "Запись сообщества",
-#     "attachments": "",  
-#     "access_token": vk_api_key,
-#     "v": 5.199
-# }
-
-# url = "https://api.vk.com/method/wall.post"
-
-# response = requests.get(url, params=payload)
-# response.raise_for_status()
+    payload = {
+        "owner_id": -230220710,
+        "post_id": post_id, 
+        "access_token": vk_api_key_user,
+        "v": 5.199
+    }
+    url = "https://api.vk.com/method/wall.delete"    
+    response = requests.get(url, params=payload)
+    response.raise_for_status()
+    print(response.json())
 
 
 def main():
-
-    print(vk_api_key)
+    
+    message = "Текст поста"
+    post_vk(message)
 
 
 if __name__ == '__main__':
