@@ -36,7 +36,6 @@ def delete_post_vk(post_id):
     url = "https://api.vk.com/method/wall.delete"    
     response = requests.get(url, params=payload)
     response.raise_for_status()
-    print(response.json())
 
 
 def main():
