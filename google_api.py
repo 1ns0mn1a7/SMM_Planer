@@ -139,6 +139,13 @@ def get_image_document_id(document_url):
 
 # Скачивание текста и картинок
 
+def get_file_title(file_id, drive):
+    file = drive.CreateFile({'id': file_id})
+    file.FetchMetadata(fields='title')
+    file_title = file['title']
+    return file_title
+    
+
 def download_image(url, file_title, drive, folder):
     url_parts = parse.urlparse(url)
     file_id = url_parts.path.split('/')[0]
@@ -167,7 +174,7 @@ def main():
     drive = GoogleDrive(gauth)
 
     creds = get_credentials()
-    
+
     folder = 'download'
     os.makedirs(folder, exist_ok=True)
 
