@@ -6,6 +6,7 @@ __pycache__/
 # json-files
 credentials.json
 token.json
+client_secrets.json
 
 # C extensions
 *.so
