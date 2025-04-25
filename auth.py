@@ -11,20 +11,20 @@ SCOPES = [
 ]
 
 
-def get_credentials():
+def get_credentials(credentials='client_secrets.json', token='token.json'):
     creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists(token):
+        creds = Credentials.from_authorized_user_file(token, SCOPES)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                credentials, SCOPES)
             creds = flow.run_local_server(port=0)
 
-        with open('token.json', 'w') as token:
+        with open(token, 'w') as token:
             token.write(creds.to_json())
     return creds
 

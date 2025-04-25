@@ -1,18 +1,15 @@
 import os
 from dotenv import load_dotenv
 from datetime import datetime
-# from urllib import parse
+from urllib.parse import urlparse, parse_qs
+from urllib import parse
 # from pprint import pprint
 
 from googleapiclient.discovery import build
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 from auth import get_credentials
-# from googleapiclient.errors import HttpError
-
-
-load_dotenv()
-creds = get_credentials()
-spreadsheet_id = os.environ['SPREADSHEET_ID']
 
 
 # Получение всех постов в формате list[dict], 
@@ -125,8 +122,62 @@ def get_text_from_document(creds):
     return text
 
 
-# print(get_text_from_document(creds))
+# Получение id из ссылок
+
+def get_txt_document_id(document_url):
+    url_part = parse.urlparse(document_url)
+    txt_file_id = url_part.path.split('/')[3]
+    return txt_file_id
 
 
-all_posts = get_all_posts(creds, spreadsheet_id)
-posts_to_publish = get_posts_to_publish(all_posts)
+def get_image_document_id(document_url):
+    parsed_url = urlparse(document_url)
+    query_params = parse_qs(parsed_url.query)
+    image_file_id = query_params.get("id", [None])[0]
+    return image_file_id
+
+
+# Скачивание текста и картинок
+
+def get_file_title(file_id, drive):
+    file = drive.CreateFile({'id': file_id})
+    file.FetchMetadata(fields='title')
+    file_title = file['title']
+    return file_title
+    
+
+def download_image(url, file_title, drive, folder):
+    url_parts = parse.urlparse(url)
+    file_id = url_parts.path.split('/')[0]
+    filepath = os.path.join(folder, file_title)
+    file = drive.CreateFile({'id': file_id})
+    file.GetContentFile(filepath)
+    return filepath
+
+
+def download_txt(file_id, file_title, drive, folder):
+    extension = '.txt'
+    filename = file_title + extension
+    filepath = os.path.join(folder, filename)
+    file = drive.CreateFile({'id': file_id})
+    file.GetContentFile(filepath, mimetype='text/plain')
+    return filepath
+
+
+def main():
+    load_dotenv()
+
+    spreadsheet_id = os.getenv('SPREADSHEET_ID')
+
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()
+    drive = GoogleDrive(gauth)
+
+    creds = get_credentials()
+
+    folder = 'download'
+    os.makedirs(folder, exist_ok=True)
+
+
+if __name__ == '__main__':
+    main()
