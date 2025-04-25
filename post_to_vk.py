@@ -3,13 +3,6 @@ import os
 
 from dotenv import load_dotenv
 
-# owner id (id группы) должен быть со знаком -
-owner_id = -230220710 
-# group id (id группы) 
-group_id = 230220710
-message = "Текст поста"
-photo_url = "https://i1.sndcdn.com/avatars-000247982818-ak7ft3-t500x500.jpg"
-
 
 def download_photo(photo_url):
     
@@ -54,7 +47,13 @@ def get_wall_upload_server(group_id, vk_api_key, photo_url):
     return photo_link
 
     
-def post_vk(message, photo_url, owner_id, group_id, vk_api_key):
+def post_vk(message, photo_url):
+
+    load_dotenv()
+
+    vk_api_key = os.getenv("VK_API_KEY")
+    owner_id = os.getenv("VK_OWNER_ID")
+    group_id = os.getenv("VK_GROUP_ID")
 
     # Возвращает номер созданного поста строкой
 
@@ -85,16 +84,3 @@ def delete_post_vk(post_id, owner_id, vk_api_key):
     response = requests.get(url, params=payload)
     response.raise_for_status()
     print(response.json()["response"])
-
-
-def main():
-
-    load_dotenv()
-
-    vk_api_key = os.getenv("VK_API_KEY")
-
-    post_vk(message, photo_url, owner_id, group_id, vk_api_key)
-
-
-if __name__ == '__main__':
-    main()
