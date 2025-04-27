@@ -88,7 +88,12 @@ def gif_get_wall_upload_server(group_id, vk_api_key, media_url):
     return gif_link
 
 
-def delete_post_vk(post_id, owner_id, vk_api_key):
+def delete_post_vk(post_id):
+
+    load_dotenv()
+
+    vk_api_key = os.getenv("VK_API_KEY")
+    owner_id = os.getenv("VK_OWNER_ID")
 
     # Возвращает 1 при удачном удалении поста строкой
 
