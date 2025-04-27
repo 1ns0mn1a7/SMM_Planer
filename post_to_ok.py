@@ -8,9 +8,9 @@ from generate_sig import generate_sig
 
 
 def download_media(media_url: str) -> str:
-    os.makedirs("scr", exist_ok=True)
+    os.makedirs("src", exist_ok=True)
     extension = get_file_extension(media_url)
-    file_path = os.path.join("scr", f"picture{extension}")
+    file_path = os.path.join("src", f"picture{extension}")
     response = requests.get(media_url, timeout=10)
     response.raise_for_status()
     with open(file_path, "wb") as file:
@@ -95,26 +95,10 @@ def post_to_ok(message_text: str, media_url: str = None) -> str | None:
 
     request_params["sig"] = generate_sig(request_params, session_secret_key)
 
-    try:
-        response = requests.post(
-            "https://api.ok.ru/fb.do",
-            data=request_params,
-            timeout=10
-        )
-    except requests.RequestException:
-        return None
-
-    try:
-        result = response.json()
-    except (ValueError, TypeError):
-        result = response.text
-
-    if isinstance(result, dict):
-        if result.get("error_code") is None:
-            return result.get("result")
-        return None
-
-    if isinstance(result, str) and result.isdigit():
-        return result
-
-    return None
+    response = requests.post(
+        "https://api.ok.ru/fb.do",
+        data=request_params,
+        timeout=10
+    )
+    print(response.json())
+    return response.json().get('result')

@@ -56,6 +56,24 @@ def change_status_published_post(creds, spreadsheet_id, status, row_number, plat
     ).execute()
 
 
+def clear_cell_deleted_post(creds, spreadsheet_id, row_number, platform):  
+    dct = {
+        'vk_post_id': 'P',
+        'tg_post_id': 'N',
+        'ok_post_id': 'O'
+    }   
+    service = build('sheets', 'v4', credentials=creds)
+    body = {
+        'values': [['']]
+    }     
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id, 
+        range=f"Лист1!{dct.get(platform)}{row_number}", 
+        valueInputOption='USER_ENTERED',
+        body=body,
+    ).execute()
+
+
 def set_post_id(creds, spreadsheet_id, post_id, row_number, platform):
     dct = {
         'vk': 'P',
@@ -120,19 +138,6 @@ def get_posts_to_delete(all_posts):
             row['id'] = i
             posts_to_delete.append(row)
     return posts_to_delete
-
-
-def change_status_deleted_post(creds, spreadsheet_id, row_number):    
-    service = build('sheets', 'v4', credentials=creds)
-    body = {
-        'values': [['удалён']]
-    }     
-    service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id, 
-        range=f"Лист1!K{row_number}", 
-        valueInputOption='USER_ENTERED',
-        body=body,
-    ).execute()
 
 
 # Получение текста из документа

@@ -23,6 +23,7 @@ from google_api import (
     get_file_title,
     download_image,
     get_posts_to_delete,
+    clear_cell_deleted_post
 )
 
 STATUSES = ["POSTED", "ERROR", "WAIT", "DELETED"]
@@ -107,20 +108,33 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
                 change_status_published_post(creds, spreadsheet_id, 'опубликовано', row_num, 'ok')
             else:
                 change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'ok')
-        print(post_id)
 
     posts_to_delete = get_posts_to_delete(all_posts)
     dct_posts = load_content(posts_to_delete, creds)
+    from pprint import pprint
+    pprint(dct_posts)
     for post_id, value in dct_posts.items():
+
         if tg_post_id := value.get('tg_post_id'):
-            delete_post_from_telegram(tg_post_id)
-            change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'tg')
-        # if value.get('vk_post_id'):
-        #     delete_post_vk(post_id)
-        #     change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'vk')
+            deleted_tg = delete_post_from_telegram(tg_post_id)
+            if deleted_tg:
+                print('tg')
+                change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'tg')
+                clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'tg_post_id')
+
+        if vk_post_id := value.get('vk_post_id'):
+            deleted_vk = delete_post_vk(vk_post_id)
+            if deleted_vk:
+                print('vk')
+                change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'vk')
+                clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'vk_post_id')
+
         if ok_post_id := value.get('ok_post_id'):
-            delete_post_from_ok(ok_post_id)
-            change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'ok')
+            deleted_ok = delete_post_from_ok(ok_post_id)
+            if deleted_ok:
+                print('ok')
+                change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'ok')
+                clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'ok_post_id')
 
 
 def main():
