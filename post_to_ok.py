@@ -95,10 +95,26 @@ def post_to_ok(message_text: str, media_url: str = None) -> str | None:
 
     request_params["sig"] = generate_sig(request_params, session_secret_key)
 
-    response = requests.post(
-        "https://api.ok.ru/fb.do",
-        data=request_params,
-        timeout=10
-    )
-    print(response.json())
-    return response.json().get('result')
+    try:
+        response = requests.post(
+            "https://api.ok.ru/fb.do",
+            data=request_params,
+            timeout=10
+        )
+    except requests.RequestException:
+        return None
+
+    try:
+        result = response.json()
+    except (ValueError, TypeError):
+        result = response.text
+
+    if isinstance(result, dict):
+        if result.get("error_code") is None:
+            return result.get("result")
+        return None
+
+    if isinstance(result, str) and result.isdigit():
+        return result
+
+    return None
