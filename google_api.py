@@ -6,8 +6,8 @@ from urllib import parse
 # from pprint import pprint
 
 from googleapiclient.discovery import build
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
+# from pydrive.auth import GoogleAuth
+# from pydrive.drive import GoogleDrive
 
 from auth import get_credentials
 
@@ -39,18 +39,40 @@ def get_all_posts(creds, spreadsheet_id):
 # Изменение статуса на 'опубликовано' 
 # (нужно передать row_number (номер ряда для смены статуса))
 
-def change_status_published_post(creds, spreadsheet_id, row_number):    
+def change_status_published_post(creds, spreadsheet_id, status, row_number, platform): 
+    dct = {
+        'vk': 'L',
+        'tg': 'K',
+        'ok': 'M'
+    }  
     service = build('sheets', 'v4', credentials=creds)
     body = {
-        'values': [['опубликовано']]
-    }     
+        'values': [[status]]
+    }
     service.spreadsheets().values().update(
         spreadsheetId=spreadsheet_id, 
-        range=f"Лист1!K{row_number}", 
+        range=f"Лист1!{dct.get(platform)}{row_number}", 
         valueInputOption='USER_ENTERED',
         body=body,
     ).execute()
 
+
+def set_post_id(creds, spreadsheet_id, post_id, row_number, platform):
+    dct = {
+        'vk': 'P',
+        'tg': 'N',
+        'ok': 'O'
+    }
+    service = build('sheets', 'v4', credentials=creds)
+    body = {
+        'values': [[post_id]]
+    }
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id, 
+        range=f"Лист1!{dct.get(platform)}{row_number}", 
+        valueInputOption='USER_ENTERED',
+        body=body,
+    ).execute()
 
 # Получение списка постов на публикацию
 
@@ -102,9 +124,7 @@ def change_status_deleted_post(creds, spreadsheet_id, row_number):
 
 # Получение текста из документа
 
-def get_text_from_document(creds):
-    document_id = '1C1dM1H8tzaaxS1a2iuo7Nsv-hzgJyO1gAxGTZYEP3_U'
-
+def get_text_from_document(creds, document_id):
     service = build('docs', 'v1', credentials=creds)
     document = service.documents().get(
         documentId=document_id
@@ -169,9 +189,9 @@ def main():
 
     spreadsheet_id = os.getenv('SPREADSHEET_ID')
 
-    gauth = GoogleAuth()
-    gauth.LocalWebserverAuth()
-    drive = GoogleDrive(gauth)
+    # gauth = GoogleAuth()
+    # gauth.LocalWebserverAuth()
+    # drive = GoogleDrive(gauth)
 
     creds = get_credentials()
 
