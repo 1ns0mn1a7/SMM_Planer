@@ -1,6 +1,7 @@
 import os
 import time
 from dotenv import load_dotenv
+from pprint import pprint
 
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -23,10 +24,10 @@ from google_api import (
     get_file_title,
     download_image,
     get_posts_to_delete,
-    clear_cell_deleted_post
+    clear_cell_deleted_post,
+    unset_flag,
+    update_status
 )
-
-STATUSES = ["POSTED", "ERROR", "WAIT", "DELETED"]
 
 
 def load_content(posts, creds):
@@ -59,8 +60,9 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
     # получаем посты на публикацию ("ERROR", "WAIT")
     posts = get_posts_to_publish(all_posts)
     # качаем контент(pic, text)
+    pprint(posts)
     dct_posts = load_content(posts, creds)
-    print(dct_posts)
+    # pprint(dct_posts)
     for row_num, post_dct in dct_posts.items():
         post_id = None
         text = post_dct.get('text')
@@ -74,6 +76,7 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
             if post_id:
                 set_post_id(creds, spreadsheet_id, post_id, row_num, 'tg')
                 change_status_published_post(creds, spreadsheet_id, 'опубликовано', row_num, 'tg')
+                unset_flag(creds, spreadsheet_id, row_num, 'tg')
             else:
                 change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'tg')
 
@@ -90,6 +93,7 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
             if post_id:
                 set_post_id(creds, spreadsheet_id, post_id, row_num, 'vk')
                 change_status_published_post(creds, spreadsheet_id, 'опубликовано', row_num, 'vk')
+                unset_flag(creds, spreadsheet_id, row_num, 'vk')
             else:
                 change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'vk')
 
@@ -106,40 +110,44 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
             if post_id:
                 set_post_id(creds, spreadsheet_id, post_id, row_num, 'ok')
                 change_status_published_post(creds, spreadsheet_id, 'опубликовано', row_num, 'ok')
+                unset_flag(creds, spreadsheet_id, row_num, 'ok')
             else:
                 change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'ok')
 
     posts_to_delete = get_posts_to_delete(all_posts)
     dct_posts = load_content(posts_to_delete, creds)
-    from pprint import pprint
     pprint(dct_posts)
     for post_id, value in dct_posts.items():
 
         if tg_post_id := value.get('tg_post_id'):
             deleted_tg = delete_post_from_telegram(tg_post_id)
             if deleted_tg:
-                print('tg')
+                print('tg_del')
                 change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'tg')
                 clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'tg_post_id')
-
+                unset_flag(creds, spreadsheet_id, post_id, 'delete')
         if vk_post_id := value.get('vk_post_id'):
             deleted_vk = delete_post_vk(vk_post_id)
             if deleted_vk:
-                print('vk')
+                print('vk_del')
                 change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'vk')
                 clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'vk_post_id')
+                unset_flag(creds, spreadsheet_id, post_id, 'delete')
 
         if ok_post_id := value.get('ok_post_id'):
             deleted_ok = delete_post_from_ok(ok_post_id)
             if deleted_ok:
-                print('ok')
+                print('ok_del')
                 change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'ok')
                 clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'ok_post_id')
+                unset_flag(creds, spreadsheet_id, post_id, 'delete')
+
+    update_status(creds, spreadsheet_id, all_posts)
 
 
 def main():
     load_dotenv()
-    timeout = int(os.getenv("TIMEOUT_CALL", 60 * 60))
+    timeout = int(os.getenv("TIMEOUT_CALL", 60))
     spreadsheet_id = os.getenv('SPREADSHEET_ID') 
     creds = get_credentials()
 

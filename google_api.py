@@ -10,6 +10,7 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
 from auth import get_credentials
+from post_text_validation import text_to_post_format
 
 
 # Получение всех постов в формате list[dict], 
@@ -98,12 +99,9 @@ def get_posts_to_publish(all_posts):
     posts_to_publish = []
     for i, row in enumerate(all_posts, 1):
         if (
-            row.get('Статус TG') == 'ожидание' 
-            or row.get('Статус TG') == 'ошибка' 
-            or row.get('Статус VK') == 'ожидание' 
-            or row.get('Статус VK') == 'ошибка'
-            or row.get('Статус OK') == 'ожидание' 
-            or row.get('Статус OK') == 'ошибка'
+            row.get('Telegram') == 'TRUE' 
+            or row.get('VK') == 'TRUE' 
+            or row.get('ОК') == 'TRUE'
         ):
             pub_date = row.get("Дата")
             pub_time = row.get("Время")
@@ -116,6 +114,28 @@ def get_posts_to_publish(all_posts):
                 row['id'] = i
                 posts_to_publish.append(row)
     return posts_to_publish
+
+
+def update_status(creds, spreadsheet_id, all_posts):
+    for i, row in enumerate(all_posts, 2):
+        tg = row.get('Telegram') == 'TRUE'
+        vk = row.get('VK') == 'TRUE'
+        ok = row.get('ОК') == 'TRUE'
+        if tg or vk or ok:
+            pub_date = row.get("Дата")
+            pub_time = row.get("Время")
+            if not pub_date or not pub_time:
+                continue
+            publication_time = datetime.strptime(
+                f'{pub_date} {pub_time}', '%d.%m.%y %H:%M'
+            )
+            if publication_time > datetime.now():
+                if tg:
+                    change_status_published_post(creds, spreadsheet_id, 'ожидание', i, 'tg')
+                if vk:
+                    change_status_published_post(creds, spreadsheet_id, 'ожидание', i, 'vk')
+                if ok:
+                    change_status_published_post(creds, spreadsheet_id, 'ожидание', i, 'ok')
 
 
 # Получение списка постов на удаление и смена статуса в google таблице
@@ -140,6 +160,25 @@ def get_posts_to_delete(all_posts):
     return posts_to_delete
 
 
+def unset_flag(creds, spreadsheet_id, row_number, platform):
+    dct = {
+        'vk': 'G',
+        'tg': 'F',
+        'ok': 'H',
+        'delete': 'I'
+    }
+    service = build('sheets', 'v4', credentials=creds)
+    body = {
+        'values': [['FALSE']]
+    }
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id, 
+        range=f"Лист1!{dct.get(platform)}{row_number}", 
+        valueInputOption='USER_ENTERED',
+        body=body,
+    ).execute()
+
+
 # Получение текста из документа
 
 def get_text_from_document(creds, document_id):
@@ -157,6 +196,7 @@ def get_text_from_document(creds, document_id):
                 text_run = paragraph_element.get('textRun')
                 if text_run:
                     text += text_run.get('content')
+    text = text_to_post_format(text)
     return text
 
 
