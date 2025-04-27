@@ -4,18 +4,18 @@ import os
 from dotenv import load_dotenv
 
 # message = "Тест путь гиф"
-# media_url = "scr/picture.gif"
+# media_url = "src/picture.gif"
 # "https://i.pinimg.com/736x/4d/10/d1/4d10d1797711846a6dfbc4d51d6b3bdb.jpg"
 # "https://trikky.ru/wp-content/blogs.dir/1/files/2022/04/22/unnamed-file.gif"
-# "scr/picture.jpg"
+# "src/picture.jpg"
 
 
 def download_media(media_url):
 
-    os.makedirs("scr", exist_ok=True)
+    os.makedirs("src", exist_ok=True)
 
     resolution = os.path.splitext(media_url)[1]
-    file_path = os.path.join("scr", f"picture{resolution}")
+    file_path = os.path.join("src", f"picture{resolution}")
     response = requests.get(media_url)
     response.raise_for_status()
 
@@ -111,7 +111,10 @@ def get_attachments_vk_link(group_id, vk_api_key, media_url):
         if os.path.splitext(media_url)[1] == ".gif":
             attachments = gif_get_wall_upload_server(group_id, vk_api_key, media_url)
 
-        if os.path.splitext(media_url)[1] == ".jpg":
+        if (
+            os.path.splitext(media_url)[1] == ".jpg" 
+            or os.path.splitext(media_url)[1] == ".png"
+        ):
             attachments = jpg_get_wall_upload_server(group_id, vk_api_key, media_url)
 
     else:
