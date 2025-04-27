@@ -6,8 +6,8 @@ from urllib import parse
 # from pprint import pprint
 
 from googleapiclient.discovery import build
-# from pydrive.auth import GoogleAuth
-# from pydrive.drive import GoogleDrive
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 from auth import get_credentials
 
@@ -19,7 +19,7 @@ def get_all_posts(creds, spreadsheet_id):
     service = build('sheets', 'v4', credentials=creds)
     request = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id, 
-        range='A1:K4', 
+        range='A1:P', 
         valueRenderOption='FORMATTED_VALUE',
     )
 
@@ -37,7 +37,6 @@ def get_all_posts(creds, spreadsheet_id):
 
 
 # Изменение статуса на 'опубликовано' 
-# (нужно передать row_number (номер ряда для смены статуса))
 
 def change_status_published_post(creds, spreadsheet_id, status, row_number, platform): 
     dct = {
@@ -74,6 +73,7 @@ def set_post_id(creds, spreadsheet_id, post_id, row_number, platform):
         body=body,
     ).execute()
 
+
 # Получение списка постов на публикацию
 
 def get_posts_to_publish(all_posts):
@@ -93,7 +93,7 @@ def get_posts_to_publish(all_posts):
 
 # Получение списка постов на удаление и смена статуса в google таблице
 
-def get_posts_to_delete(all_posts):
+def get_posts_to_delete(all_posts, creds, spreadsheet_id, row_number):
     posts_to_delete = []
 
     for i, row in enumerate(all_posts, 1):
@@ -166,9 +166,7 @@ def get_file_title(file_id, drive):
     return file_title
     
 
-def download_image(url, file_title, drive, folder):
-    url_parts = parse.urlparse(url)
-    file_id = url_parts.path.split('/')[0]
+def download_image(file_id, file_title, drive, folder):
     filepath = os.path.join(folder, file_title)
     file = drive.CreateFile({'id': file_id})
     file.GetContentFile(filepath)
@@ -189,9 +187,9 @@ def main():
 
     spreadsheet_id = os.getenv('SPREADSHEET_ID')
 
-    # gauth = GoogleAuth()
-    # gauth.LocalWebserverAuth()
-    # drive = GoogleDrive(gauth)
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()
+    drive = GoogleDrive(gauth)
 
     creds = get_credentials()
 

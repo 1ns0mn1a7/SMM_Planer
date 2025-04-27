@@ -2,6 +2,9 @@ import os
 import time
 from dotenv import load_dotenv
 
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+
 from auth import get_credentials
 from post_to_telegram import send_to_telegram
 from post_to_vk import post_vk
@@ -11,7 +14,10 @@ from google_api import (
     get_txt_document_id,
     get_text_from_document,
     change_status_published_post,
-    set_post_id
+    set_post_id,
+    get_image_document_id,
+    get_file_title,
+    download_image
 )
 
 STATUSES = ["POSTED", "ERROR", "WAIT", "DELETED"]
@@ -36,7 +42,7 @@ def load_content(posts, creds):
     return dct_posts
 
 
-def planner_loop(creds, spreadsheet_id):
+def planner_loop(creds, spreadsheet_id, drive, folder='src'):
     # получаем таблицу
     all_posts = get_all_posts(creds, spreadsheet_id)
     # получаем посты на публикацию ("ERROR", "WAIT")
@@ -48,7 +54,7 @@ def planner_loop(creds, spreadsheet_id):
         post_id = None
         text = post_dct.get('text')
         img_url = post_dct.get('img_url')
-        
+
         if post_dct.get('tg'):
             post_id = send_to_telegram(text, img_url)
             if post_id:
@@ -75,31 +81,35 @@ def planner_loop(creds, spreadsheet_id):
                     'tg',
                 )
 
-        # if post_dct.get('vk'):
-        #     post_id = post_vk(text, img_url)
-        #     if post_id:
-        #         set_post_id(
-        #             creds,
-        #             spreadsheet_id, 
-        #             post_id,
-        #             row_num,
-        #             'vk'
-        #         )
-        #         change_status_published_post(
-        #             creds,
-        #             spreadsheet_id,
-        #             'опубликовано',
-        #             row_num, 
-        #             'vk',
-        #         )
-        #     elif post_id is None:
-        #         change_status_published_post(
-        #             creds,
-        #             spreadsheet_id,
-        #             'ошибка',
-        #             row_num,
-        #             'vk',
-        #         )
+        if post_dct.get('vk'):
+            os.makedirs(folder, exist_ok=True)
+            image_document_id = get_image_document_id(img_url)
+            image_title = get_file_title(image_document_id, drive)
+            filepath = download_image(image_document_id, image_title, drive, folder)
+            post_id = post_vk(text, filepath)
+            if post_id:
+                set_post_id(
+                    creds,
+                    spreadsheet_id, 
+                    post_id,
+                    row_num,
+                    'vk'
+                )
+                change_status_published_post(
+                    creds,
+                    spreadsheet_id,
+                    'опубликовано',
+                    row_num, 
+                    'vk',
+                )
+            elif post_id is None:
+                change_status_published_post(
+                    creds,
+                    spreadsheet_id,
+                    'ошибка',
+                    row_num,
+                    'vk',
+                )
         # отдаём контент(пост) в соответствующий модуль
         # получаем статус успех/ошибка
         # 
@@ -115,8 +125,12 @@ def main():
     spreadsheet_id = os.getenv('SPREADSHEET_ID') 
     creds = get_credentials()
 
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()
+    drive = GoogleDrive(gauth)
+
     while 1:
-        planner_loop(creds, spreadsheet_id)
+        planner_loop(creds, spreadsheet_id, drive)
         time.sleep(timeout)
 
 
