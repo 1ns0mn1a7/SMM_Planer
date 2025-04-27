@@ -19,7 +19,7 @@ def get_all_posts(creds, spreadsheet_id):
     service = build('sheets', 'v4', credentials=creds)
     request = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id, 
-        range='A1:P', 
+        range='A1:P11', 
         valueRenderOption='FORMATTED_VALUE',
     )
 
@@ -79,33 +79,46 @@ def set_post_id(creds, spreadsheet_id, post_id, row_number, platform):
 def get_posts_to_publish(all_posts):
     posts_to_publish = []
     for i, row in enumerate(all_posts, 1):
-        if row.get('Статус') == 'опубликовано' or row.get('Статус') == 'удалён':
-            continue
-
-        publication_time = datetime.strptime(
-            f'{row["Дата"]} {row["Время"]}', '%d.%m.%y %H:%M'
-        )
-        if publication_time <= datetime.now():
-            row['id'] = i
-            posts_to_publish.append(row)
+        if (
+            row.get('Статус TG') == 'ожидание' 
+            or row.get('Статус TG') == 'ошибка' 
+            or row.get('Статус VK') == 'ожидание' 
+            or row.get('Статус VK') == 'ошибка'
+            or row.get('Статус OK') == 'ожидание' 
+            or row.get('Статус OK') == 'ошибка'
+        ):
+            pub_date = row.get("Дата")
+            pub_time = row.get("Время")
+            if not pub_date or not pub_time:
+                continue
+            publication_time = datetime.strptime(
+                f'{pub_date} {pub_time}', '%d.%m.%y %H:%M'
+            )
+            if publication_time <= datetime.now():
+                row['id'] = i
+                posts_to_publish.append(row)
     return posts_to_publish
 
 
 # Получение списка постов на удаление и смена статуса в google таблице
 
-def get_posts_to_delete(all_posts, creds, spreadsheet_id, row_number):
+def get_posts_to_delete(all_posts):
     posts_to_delete = []
 
     for i, row in enumerate(all_posts, 1):
-        if row.get('Статус') == 'опубликовано' and row.get('Удалить') == 'TRUE':
-            deletion_time = datetime.strptime(
-                f'{row["Удалить в"]}', '%d.%m.%y %H:%M'
-            )
-        
-            if deletion_time <= datetime.now():
-                row['id'] = i
-                posts_to_delete.append(row)
-                change_status_deleted_post(creds, spreadsheet_id, row_number=i+1)
+        if row.get('Удалить') == 'FALSE':
+            continue
+        del_date = row.get("Удалить в")
+        if not del_date:
+            continue
+
+        deletion_time = datetime.strptime(
+            f'{row["Удалить в"]}', '%d.%m.%y %H:%M'
+        )
+    
+        if deletion_time <= datetime.now():
+            row['id'] = i
+            posts_to_delete.append(row)
     return posts_to_delete
 
 
