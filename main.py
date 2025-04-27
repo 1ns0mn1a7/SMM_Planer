@@ -8,6 +8,10 @@ from pydrive.drive import GoogleDrive
 from auth import get_credentials
 from post_to_telegram import send_to_telegram
 from post_to_vk import post_vk
+from post_to_ok import post_to_ok
+from delete_post_from_telegram import delete_post_from_telegram
+from delete_post_from_ok import delete_post_from_ok
+from post_to_vk import delete_post_vk
 from google_api import (
     get_all_posts,
     get_posts_to_publish,
@@ -17,7 +21,8 @@ from google_api import (
     set_post_id,
     get_image_document_id,
     get_file_title,
-    download_image
+    download_image,
+    get_posts_to_delete,
 )
 
 STATUSES = ["POSTED", "ERROR", "WAIT", "DELETED"]
@@ -37,8 +42,13 @@ def load_content(posts, creds):
             "img_url": img_url,
             "tg": "TRUE" == post.get('Telegram'),
             "vk": "TRUE" == post.get('VK'),
-            "ok": "TRUE" == post.get('OK')
-            }
+            "ok": "TRUE" == post.get('ОК'),
+            "detele": "TRUE" == post.get('Удалить'),
+            "delete_at": post.get('Удалить в'),
+            "tg_post_id": post.get('TG_POST_ID'),
+            "vk_post_id": post.get('VK_POST_ID'),
+            "ok_post_id": post.get('OK_POST_ID')
+        }
     return dct_posts
 
 
@@ -55,68 +65,62 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
         text = post_dct.get('text')
         img_url = post_dct.get('img_url')
 
+        # отдаём контент(пост) в соответствующий модуль
+        # получаем статус успех/ошибка
+        # меняем статус в таблице
         if post_dct.get('tg'):
             post_id = send_to_telegram(text, img_url)
             if post_id:
-                set_post_id(
-                    creds,
-                    spreadsheet_id, 
-                    post_id,
-                    row_num,
-                    'tg'
-                )
-                change_status_published_post(
-                    creds,
-                    spreadsheet_id,
-                    'опубликовано',
-                    row_num, 
-                    'tg',
-                )
-            elif post_id is None:
-                change_status_published_post(
-                    creds,
-                    spreadsheet_id,
-                    'ошибка',
-                    row_num,
-                    'tg',
-                )
+                set_post_id(creds, spreadsheet_id, post_id, row_num, 'tg')
+                change_status_published_post(creds, spreadsheet_id, 'опубликовано', row_num, 'tg')
+            else:
+                change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'tg')
 
         if post_dct.get('vk'):
-            os.makedirs(folder, exist_ok=True)
-            image_document_id = get_image_document_id(img_url)
-            image_title = get_file_title(image_document_id, drive)
-            filepath = download_image(image_document_id, image_title, drive, folder)
-            post_id = post_vk(text, filepath)
-            if post_id:
-                set_post_id(
-                    creds,
-                    spreadsheet_id, 
-                    post_id,
-                    row_num,
-                    'vk'
-                )
-                change_status_published_post(
-                    creds,
-                    spreadsheet_id,
-                    'опубликовано',
-                    row_num, 
-                    'vk',
-                )
-            elif post_id is None:
-                change_status_published_post(
-                    creds,
-                    spreadsheet_id,
-                    'ошибка',
-                    row_num,
-                    'vk',
-                )
-        # отдаём контент(пост) в соответствующий модуль
-        # получаем статус успех/ошибка
-        # 
-        print(post_id)
-        # меняем статус в таблице.
+            if img_url.startswith('https://drive.google.com'):
+                os.makedirs(folder, exist_ok=True)
+                image_document_id = get_image_document_id(img_url)
+                image_title = get_file_title(image_document_id, drive)
+                filepath = download_image(image_document_id, image_title, drive, folder)
+                post_id = post_vk(text, filepath)
+            else:
+                post_id = post_vk(text, img_url)
 
-    # # Получение списка постов на удаление
+            if post_id:
+                set_post_id(creds, spreadsheet_id, post_id, row_num, 'vk')
+                change_status_published_post(creds, spreadsheet_id, 'опубликовано', row_num, 'vk')
+            else:
+                change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'vk')
+
+        if post_dct.get('ok'):
+            if img_url.startswith('https://drive.google.com'):
+                os.makedirs(folder, exist_ok=True)
+                image_document_id = get_image_document_id(img_url)
+                image_title = get_file_title(image_document_id, drive)
+                filepath = download_image(image_document_id, image_title, drive, folder)
+                post_id = post_to_ok(text, filepath)
+            else:
+                post_id = post_to_ok(text, img_url)
+
+            if post_id:
+                set_post_id(creds, spreadsheet_id, post_id, row_num, 'ok')
+                change_status_published_post(creds, spreadsheet_id, 'опубликовано', row_num, 'ok')
+            else:
+                change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'ok')
+        print(post_id)
+
+    posts_to_delete = get_posts_to_delete(all_posts)
+    dct_posts = load_content(posts_to_delete, creds)
+    for post_id, value in dct_posts.items():
+        if tg_post_id := value.get('tg_post_id'):
+            delete_post_from_telegram(tg_post_id)
+            change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'tg')
+        # if value.get('vk_post_id'):
+        #     delete_post_vk(post_id)
+        #     change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'vk')
+        if ok_post_id := value.get('ok_post_id'):
+            delete_post_from_ok(ok_post_id)
+            change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'ok')
 
 
 def main():
