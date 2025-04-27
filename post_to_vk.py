@@ -2,33 +2,30 @@ import requests
 import os
 
 from dotenv import load_dotenv
-from url_get_file_extension import get_file_extension
 
-message = "Текст поста"
-media_url = "https://i.pinimg.com/736x/4d/10/d1/4d10d1797711846a6dfbc4d51d6b3bdb.jpg"
+# message = "Тест путь гиф"
+# media_url = "scr/picture.gif"
+# "https://i.pinimg.com/736x/4d/10/d1/4d10d1797711846a6dfbc4d51d6b3bdb.jpg"
+# "https://trikky.ru/wp-content/blogs.dir/1/files/2022/04/22/unnamed-file.gif"
+# "scr/picture.jpg"
 
 
-def download_photo(media_url):
-    
+def download_media(media_url):
+
+    os.makedirs("scr", exist_ok=True)
+
+    resolution = os.path.splitext(media_url)[1]
+    file_path = os.path.join("scr", f"picture{resolution}")
     response = requests.get(media_url)
     response.raise_for_status()
 
-    with open("picture.png", "wb") as file:
+    with open(file_path, "wb") as file:
         file.write(response.content)
 
-
-def download_gif(media_url):
-    
-    response = requests.get(media_url)
-    response.raise_for_status()
-
-    with open("gifka.gif", "wb") as file:
-        file.write(response.content)
+    return file_path
 
 
 def jpg_get_wall_upload_server(group_id, vk_api_key, media_url):
-
-    download_photo(media_url)
 
     url = "https://api.vk.com/method/photos.getWallUploadServer"
     payload = {
@@ -40,7 +37,7 @@ def jpg_get_wall_upload_server(group_id, vk_api_key, media_url):
     response.raise_for_status()
     upload_url = response.json()["response"]["upload_url"]
 
-    response = requests.post(upload_url, files={'photo': open('picture.jpg', 'rb')})
+    response = requests.post(upload_url, files={'photo': open(media_url, 'rb')})
 
     url = "https://api.vk.com/method/photos.saveWallPhoto"
     payload = {
@@ -61,7 +58,7 @@ def jpg_get_wall_upload_server(group_id, vk_api_key, media_url):
 
 
 def gif_get_wall_upload_server(group_id, vk_api_key, media_url):
-    download_gif(media_url)
+
     url = "https://api.vk.com/method/docs.getWallUploadServer"
     payload = {
         "access_token": vk_api_key,
@@ -74,7 +71,7 @@ def gif_get_wall_upload_server(group_id, vk_api_key, media_url):
 
     upload_url = response.json()["response"]["upload_url"]
 
-    response = requests.post(upload_url, files={'file': open('gifka.gif', 'rb')})
+    response = requests.post(upload_url, files={'file': open(media_url, 'rb')})
 
     url = "https://api.vk.com/method/docs.save"
     payload = {
@@ -107,6 +104,29 @@ def delete_post_vk(post_id, owner_id, vk_api_key):
     print(response.json()["response"])
 
 
+def get_attachments_vk_link(group_id, vk_api_key, media_url):
+
+    if os.path.isfile(media_url):
+
+        if os.path.splitext(media_url)[1] == ".gif":
+            attachments = gif_get_wall_upload_server(group_id, vk_api_key, media_url)
+
+        if os.path.splitext(media_url)[1] == ".jpg":
+            attachments = jpg_get_wall_upload_server(group_id, vk_api_key, media_url)
+
+    else:
+
+        file_path = download_media(media_url)
+
+        if os.path.splitext(media_url)[1] == ".gif":
+            attachments = gif_get_wall_upload_server(group_id, vk_api_key, file_path)
+
+        if os.path.splitext(media_url)[1] == ".jpg":
+            attachments = jpg_get_wall_upload_server(group_id, vk_api_key, file_path)
+  
+    return attachments
+
+
 def post_vk(message, media_url):
 
     # Возвращает номер созданного поста строкой
@@ -117,10 +137,7 @@ def post_vk(message, media_url):
     owner_id = os.getenv("VK_OWNER_ID")
     group_id = os.getenv("VK_GROUP_ID")
 
-    if get_file_extension(media_url) == ".gif":
-        attachments = gif_get_wall_upload_server(group_id, vk_api_key, media_url)
-    else:
-        attachments = jpg_get_wall_upload_server(group_id, vk_api_key, media_url)
+    attachments = get_attachments_vk_link(group_id, vk_api_key, media_url)
 
     payload_wall_post = {
         "owner_id": owner_id,
