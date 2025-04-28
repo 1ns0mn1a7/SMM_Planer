@@ -2,6 +2,9 @@ import re
 
 
 def text_to_post_format(text: str) -> str:
+    text = text.replace('“', '"').replace('”', '"')
+    text = text.replace('‘', "'").replace('’', "'")
+
     text = re.sub(r'\s+', ' ', text)
     text = re.sub(r'\s*([.,:;!?])', r'\1', text)
     text = re.sub(r'([«»])\s*', r'\1', text)
