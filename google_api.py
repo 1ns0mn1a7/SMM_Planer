@@ -31,8 +31,8 @@ def get_all_posts(creds, spreadsheet_id):
 
 def change_status_published_post(creds, spreadsheet_id, status, row_number, platform): 
     dct = {
-        'vk': 'L',
         'tg': 'K',
+        'vk': 'L',
         'ok': 'M'
     }  
     service = build('sheets', 'v4', credentials=creds)
@@ -49,9 +49,9 @@ def change_status_published_post(creds, spreadsheet_id, status, row_number, plat
 
 def clear_cell_deleted_post(creds, spreadsheet_id, row_number, platform):  
     dct = {
-        'vk_post_id': 'P',
         'tg_post_id': 'N',
-        'ok_post_id': 'O'
+        'vk_post_id': 'O',
+        'ok_post_id': 'P'
     }   
     service = build('sheets', 'v4', credentials=creds)
     body = {
@@ -67,9 +67,9 @@ def clear_cell_deleted_post(creds, spreadsheet_id, row_number, platform):
 
 def set_post_id(creds, spreadsheet_id, post_id, row_number, platform):
     dct = {
-        'vk': 'P',
         'tg': 'N',
-        'ok': 'O'
+        'vk': 'O',
+        'ok': 'P'
     }
     service = build('sheets', 'v4', credentials=creds)
     body = {
