@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
+from urllib import parse
 
 from googleapiclient.discovery import build
 
@@ -82,8 +83,6 @@ def set_post_id(creds, spreadsheet_id, post_id, row_number, platform):
     ).execute()
 
 
-# Получение списка постов на публикацию
-
 def get_posts_to_publish(all_posts):
     posts_to_publish = []
     for i, row in enumerate(all_posts, 1):
@@ -127,8 +126,6 @@ def update_status(creds, spreadsheet_id, all_posts):
                     change_status_published_post(creds, spreadsheet_id, 'ожидание', i, 'ok')
 
 
-# Получение списка постов на удаление и смена статуса в google таблице
-
 def get_posts_to_delete(all_posts):
     posts_to_delete = []
 
@@ -168,8 +165,6 @@ def unset_flag(creds, spreadsheet_id, row_number, platform):
     ).execute()
 
 
-# Получение текста из документа
-
 def get_text_from_document(creds, document_id):
     service = build('docs', 'v1', credentials=creds)
     document = service.documents().get(
@@ -189,7 +184,11 @@ def get_text_from_document(creds, document_id):
     return text
 
 
-# Получение id из ссылок
+def get_txt_document_id(document_url):
+    url_part = parse.urlparse(document_url)
+    txt_file_id = url_part.path.split('/')[3]
+    return txt_file_id
+
 
 def get_image_document_id(document_url):
     parsed_url = urlparse(document_url)
@@ -197,8 +196,6 @@ def get_image_document_id(document_url):
     image_file_id = query_params.get("id", [None])[0]
     return image_file_id
 
-
-# Скачивание текста и картинок
 
 def get_file_title(file_id, drive):
     file = drive.CreateFile({'id': file_id})
@@ -211,4 +208,13 @@ def download_image(file_id, file_title, drive, folder):
     filepath = os.path.join(folder, file_title)
     file = drive.CreateFile({'id': file_id})
     file.GetContentFile(filepath)
+    return filepath
+
+
+def download_txt(file_id, file_title, drive, folder):
+    extension = '.txt'
+    filename = file_title + extension
+    filepath = os.path.join(folder, filename)
+    file = drive.CreateFile({'id': file_id})
+    file.GetContentFile(filepath, mimetype='text/plain')
     return filepath
