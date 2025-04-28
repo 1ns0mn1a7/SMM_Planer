@@ -72,7 +72,7 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
                 change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'tg')
 
         if post_dct.get('vk'):
-            if img_url.startswith('https://drive.google.com'):
+            if img_url.startswith('https://drive'):
                 os.makedirs(folder, exist_ok=True)
                 image_document_id = get_image_document_id(img_url)
                 image_title = get_file_title(image_document_id, drive)
@@ -89,7 +89,7 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
                 change_status_published_post(creds, spreadsheet_id, 'ошибка', row_num, 'vk')
 
         if post_dct.get('ok'):
-            if img_url.startswith('https://drive.google.com'):
+            if img_url.startswith('https://drive'):
                 os.makedirs(folder, exist_ok=True)
                 image_document_id = get_image_document_id(img_url)
                 image_title = get_file_title(image_document_id, drive)
@@ -134,7 +134,7 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
 
 def main():
     load_dotenv()
-    timeout = int(os.getenv("TIMEOUT_CALL", 60))
+    timeout = int(os.getenv("TIMEOUT_CALL", 20))
     spreadsheet_id = os.getenv('SPREADSHEET_ID') 
     creds = get_credentials()
 

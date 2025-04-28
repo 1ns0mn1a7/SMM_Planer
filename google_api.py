@@ -12,7 +12,7 @@ def get_all_posts(creds, spreadsheet_id):
     service = build('sheets', 'v4', credentials=creds)
     request = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id, 
-        range='A1:P11', 
+        range='A1:P', 
         valueRenderOption='FORMATTED_VALUE',
     )
 
