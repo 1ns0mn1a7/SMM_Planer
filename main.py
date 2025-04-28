@@ -1,7 +1,6 @@
 import os
 import time
 from dotenv import load_dotenv
-from pprint import pprint
 
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -55,22 +54,14 @@ def load_content(posts, creds):
 
 
 def planner_loop(creds, spreadsheet_id, drive, folder='src'):
-    # получаем таблицу
     all_posts = get_all_posts(creds, spreadsheet_id)
-    # получаем посты на публикацию ("ERROR", "WAIT")
     posts = get_posts_to_publish(all_posts)
-    # качаем контент(pic, text)
-    pprint(posts)
     dct_posts = load_content(posts, creds)
-    # pprint(dct_posts)
     for row_num, post_dct in dct_posts.items():
         post_id = None
         text = post_dct.get('text')
         img_url = post_dct.get('img_url')
 
-        # отдаём контент(пост) в соответствующий модуль
-        # получаем статус успех/ошибка
-        # меняем статус в таблице
         if post_dct.get('tg'):
             post_id = send_to_telegram(text, img_url)
             if post_id:
@@ -116,7 +107,6 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
 
     posts_to_delete = get_posts_to_delete(all_posts)
     dct_posts = load_content(posts_to_delete, creds)
-    pprint(dct_posts)
     for post_id, value in dct_posts.items():
 
         if tg_post_id := value.get('tg_post_id'):

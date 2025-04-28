@@ -1,20 +1,11 @@
 import os
-from dotenv import load_dotenv
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
-from urllib import parse
-# from pprint import pprint
 
 from googleapiclient.discovery import build
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 
-from auth import get_credentials
 from post_text_validation import text_to_post_format
 
-
-# Получение всех постов в формате list[dict], 
-# явно указывается диапазон таблицы (range)
 
 def get_all_posts(creds, spreadsheet_id):
     service = build('sheets', 'v4', credentials=creds)
@@ -36,8 +27,6 @@ def get_all_posts(creds, spreadsheet_id):
 
     return all_posts
 
-
-# Изменение статуса на 'опубликовано' 
 
 def change_status_published_post(creds, spreadsheet_id, status, row_number, platform): 
     dct = {
@@ -202,12 +191,6 @@ def get_text_from_document(creds, document_id):
 
 # Получение id из ссылок
 
-def get_txt_document_id(document_url):
-    url_part = parse.urlparse(document_url)
-    txt_file_id = url_part.path.split('/')[3]
-    return txt_file_id
-
-
 def get_image_document_id(document_url):
     parsed_url = urlparse(document_url)
     query_params = parse_qs(parsed_url.query)
@@ -229,31 +212,3 @@ def download_image(file_id, file_title, drive, folder):
     file = drive.CreateFile({'id': file_id})
     file.GetContentFile(filepath)
     return filepath
-
-
-def download_txt(file_id, file_title, drive, folder):
-    extension = '.txt'
-    filename = file_title + extension
-    filepath = os.path.join(folder, filename)
-    file = drive.CreateFile({'id': file_id})
-    file.GetContentFile(filepath, mimetype='text/plain')
-    return filepath
-
-
-def main():
-    load_dotenv()
-
-    spreadsheet_id = os.getenv('SPREADSHEET_ID')
-
-    gauth = GoogleAuth()
-    gauth.LocalWebserverAuth()
-    drive = GoogleDrive(gauth)
-
-    creds = get_credentials()
-
-    folder = 'download'
-    os.makedirs(folder, exist_ok=True)
-
-
-if __name__ == '__main__':
-    main()
