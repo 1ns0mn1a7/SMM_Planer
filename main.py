@@ -112,14 +112,12 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
         if tg_post_id := value.get('tg_post_id'):
             deleted_tg = delete_post_from_telegram(tg_post_id)
             if deleted_tg:
-                print('tg_del')
                 change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'tg')
                 clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'tg_post_id')
                 unset_flag(creds, spreadsheet_id, post_id, 'delete')
         if vk_post_id := value.get('vk_post_id'):
             deleted_vk = delete_post_vk(vk_post_id)
             if deleted_vk:
-                print('vk_del')
                 change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'vk')
                 clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'vk_post_id')
                 unset_flag(creds, spreadsheet_id, post_id, 'delete')
@@ -127,7 +125,6 @@ def planner_loop(creds, spreadsheet_id, drive, folder='src'):
         if ok_post_id := value.get('ok_post_id'):
             deleted_ok = delete_post_from_ok(ok_post_id)
             if deleted_ok:
-                print('ok_del')
                 change_status_published_post(creds, spreadsheet_id, 'удалён', post_id, 'ok')
                 clear_cell_deleted_post(creds, spreadsheet_id, post_id, 'ok_post_id')
                 unset_flag(creds, spreadsheet_id, post_id, 'delete')
