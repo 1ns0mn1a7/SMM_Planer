@@ -143,9 +143,12 @@ def main():
     drive = GoogleDrive(gauth)
 
     while 1:
-        planner_loop(creds, spreadsheet_id, drive)
-        time.sleep(timeout)
-
+        try:
+            planner_loop(creds, spreadsheet_id, drive)
+            time.sleep(timeout)
+        except Exception as error:
+            print(error)
+    
 
 if __name__ == "__main__":
     main()
